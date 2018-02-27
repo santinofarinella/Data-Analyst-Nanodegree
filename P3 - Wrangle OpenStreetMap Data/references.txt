@@ -1,0 +1,25 @@
+http://wiki.openstreetmap.org/wiki/About_OpenStreetMap 
+http://wiki.openstreetmap.org/wiki/OSM_XML 
+http://wiki.openstreetmap.org/wiki/Mapzen 
+https://en.wikipedia.org/wiki/Metropolitan_City_of_Milan
+Mooney, P. and Corcoran, P., 2012. The annotation process in OpenStreetMap 
+http://www.statcan.gc.ca/pub/92-195-x/2011001/other-autre/qua-eng.htm 
+Girres, J.F. and Touya, G. - Quality assessment of the french OpenStreetMap dataset 
+Davidovic, N., Mooney, P. and Stoimenov, L. - An analysis of tagging practices and patterns in urban areas in OpenStreetMap 
+Senaratne, H. , Mobasheri, A. , Ahmed Loai Ali, A.L., Capineri, C. , Haklay, M. - A review of volunteered geographic information quality assessment methods 
+http://wiki.openstreetmap.org/wiki/Map_Features 
+http://wiki.openstreetmap.org/wiki/Key:addr 
+http://wiki.openstreetmap.org/wiki/IT:Key:name?uselang=it 
+http://lab.comuni-italiani.it/download/comuni.html 
+http://www.omarpela.com/milano/cap-codice-di-avviamento-postale-vie-milano.html 
+www.comune.veduggioconcolzano.mb.it/files/CAP-prov-Monza_brianza.xls.pdf 
+http://wiki.openstreetmap.org/wiki/Key:building 
+http://wiki.openstreetmap.org/wiki/Key:highway 
+http://wiki.openstreetmap.org/wiki/Key:landuse 
+http://wiki.openstreetmap.org/wiki/Key:natural 
+http://wiki.openstreetmap.org/wiki/Key:railway 
+http://wiki.openstreetmap.org/wiki/Key:waterway 
+Goodchild, M.F. and Li, L. - Assuring the quality of Volunteered Geographic Information 
+Jamal Jokar Arsanjani, J.J. , Zipf, A. , Mooney, P. and Helbich, M. - OpenStreetMap in GIScience Experiences, Research, and Applications
+http://wiki.openstreetmap.org/wiki/JOSM/Plugins/OSMantic
+Ali, A.L. , Falko Schmid, F. , Al-Salman, R. and Kauppinen, T. - Ambiguity and Plausibility: Managing Classification Quality in Volunteered Geographic Information

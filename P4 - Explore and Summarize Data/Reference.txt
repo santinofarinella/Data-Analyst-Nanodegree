@@ -1,0 +1,25 @@
+[1] https://www.prosper.com/;
+[2] https://en.wikipedia.org/wiki/Prosper_Marketplace;
+[3] https://www.prosper.com/Downloads/Legal/Prosper_Prospectus_2017-01-12.pdf;
+[4]https://www.prosper.com/Downloads/Services/Documentation/ProsperDataExport_Specification.pdf;
+[5] https://www.prosper.com/help/topics/how-to-read-a-loan-listing;
+[6] http://www.cookbook-r.com/
+[7] http://docs.ggplot2.org/current/
+[8] http://colorbrewer2.org/#type=qualitative&scheme=Accent&n=7
+[9] https://www.orchardplatform.com/blog/understanding-loan-statuses/;
+[10] http://www.investopedia.com/terms/l/lineofcredit.asp;
+[11] http://www.investopedia.com/terms/r/revolving-account.asp;
+[12] http://www.investopedia.com/terms/t/trade-line.asp
+[13] Gunter Löeffler, Peter N. Posch, Credit Risk Modeling using Excel and VBA; 
+[14] https://en.wikipedia.org/wiki/Multicollinearity
+[15] http://www.wright.edu/~thaddeus.tarpey/ES714glm.pdf;
+[16] Bart Baesens, Daniel Roesch, Harald Scheule, Credit Risk Analytics: Measurement Techniques, Applications, and Examples in SAS 
+[17] Andrea Sironi, Andrea Resti, Risk Management and Shareholders' Value in Banking: From Risk Measurement Models to Capital Allocation Policies 
+[18] http://classroom.synonym.com/disadvantages-logistic-regression-8574447.html
+[19] https://www.prosper.com/plp/general-prosper_score/
+[20] Gareth James, Daniela Witten, Trevor Hastie and Robert Tibshirani, An Introduction to Statistical Learning with Applications in R
+[21] https://www.r-bloggers.com/using-mutate-from-dplyr-inside-a-function-getting-around-non-standard-evaluation/
+[22] http://www.sthda.com/english/wiki/ggplot2-legend-easy-steps-to-change-the-position-and-the-appearance-of-a-graph-legend-in-r-software
+[23] https://en.wikipedia.org/wiki/Overfitting
+[24] http://classroom.synonym.com/disadvantages-logistic-regression-8574447.html
+[25] http://www.sthda.com/english/wiki/ggplot2-legend-easy-steps-to-change-the-position-and-the-appearance-of-a-graph-legend-in-r-software

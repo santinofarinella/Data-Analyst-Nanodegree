@@ -1,0 +1,1023 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+Prosper: Fintech and new Lending Models 
+========================================================
+
+Prosper is a online marketplace lending that connects borrowers and investor and matches individuals who wish to obtain unsecured consumer loans ("borrowers") with those who are willing to help fund those loans ("investors"). A borrower who wishes to obtain a loan through marketplace must post a loan listing to marketplace. If a listing receives enough investor commitments to be funded. Due to the novel nature of the peer-to-peer lending models, the SEC, on November 24, 2008, imposed a cease and desist order on Prosper. After review,the SEC treats all peer-to-peer lending transactions as sales of securities and requires that all platforms register with the SEC, and Prosper, in July 2009, reopened their website for lending ("investing") and borrowing. Prosper provides information about loan. This report explores "Loan Data from Prosper" data set. In particular, the loan issues after SEC registration.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+library(RCurl)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(gridExtra)
+library(psych)
+library(knitr)
+library(ggthemes)
+library(RColorBrewer)
+library(lazyeval)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Load_the_Data}
+# Load the Data
+df <- getURL("https://s3.amazonaws.com/udacity-hosted-downloads/ud651/prosperLoanData.csv")
+df <- read.csv(text = df)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+str(df)
+```
+
+```{r}
+# Convert 'LoanOriginationDate' variable in an object of type 'character' and
+# then in an objects of class 'Date'
+df$LoanOriginationDate <- as.Date(as.character(df$LoanOriginationDate), format = "%Y-%m-%d")
+
+# Filter the data of 'df' data frame object which meet a particular condition
+df <- subset(df, LoanOriginationDate >= as.Date("2009-07-13"))
+df <- subset(df, TotalProsperLoans == 0 | is.na(TotalProsperLoans))
+df <- subset(df, LoanStatus != "Current")
+df <- subset(df, Term != 12)
+df <- subset(df, ProsperRating..Alpha. != "")
+df <- subset(df, !is.na(DebtToIncomeRatio))
+```
+
+
+
+# Univariate Plots Section
+
+Prosper provides information to investors in order to help them make sound investment decisions.The historical performance of Borrower Loans are incorporate into proprietary rating system. Each listing is assigned a Prosper Rating. The rating associated with a listing reflects the loss expectations for that listing as of the time the rating is given.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots}
+# Encode "ProsperRating..Alpha." variable as a factor 
+df$ProsperRating..Alpha. <- factor(df$ProsperRating..Alpha., labels = c("AA", "A", 
+    "B", "C", "D", "E", "HR"), ordered = TRUE)
+
+# Function to create bar chart
+bar.plot <- function (data.frame, var, label.x, title) {
+  # Create a bar chart
+  #  
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var:  selected variable
+  #   label.x: x axis label 
+  #   title: plot title
+  #
+  # Returns:
+  #   Bar chart 
+  ggplot(aes(x = var), data = data.frame) + geom_bar(aes(y = ..count..), colour = "#e31a1c", 
+    fill = "#b10026") + labs(x = label.x, y = "Count") + ggtitle(title)
+  }
+
+bar.plot(df, df$ProsperRating..Alpha, 'Prosper Rating', 'Loan by Prosper Rating')
+
+```
+
+There are seven Prosper Rating, It goes as follows, from excellent to poor: AA, A, B, C, D, E, HR.We can observe, in the chart above, number of loans are assigned a Prosper Rating. The 'ProsperRating..Alpha.' variable is important, in fact the maximum loan amount and interest rates are determined by the borrower's Prosper Rating. 
+Prosper Marketplace offers unsecured consumer loans from 2,000 dollars to 35,000 dollars. 
+
+```{r}
+summary(df$LoanOriginalAmount)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Function to create frequency histogram
+freq.hist <- function(data.frame, var, label.x, bins, title) {
+  # Create a frequency histogram
+  #  
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var:  selected variable
+  #   label.x: x axis label 
+  #   bins: the width of the bins
+  #   title: plot title
+  #
+  # Returns:
+  #   frequency histogram
+  ggplot(aes(x = var), data = data.frame) + geom_histogram(aes(y = ..count..), binwidth = bins, 
+     colour = "#e31a1c", fill = "#b10026") + labs(x = label.x, y = "Count") + ggtitle(title)
+}
+
+freq.hist(df, df$LoanOriginalAmount, "Loan Original Amount ($)", 1000, "Frequency histogram of Loan Original Amount")
+```
+
+It is confirmed that Prosper marketplace offers $35,000 as maximum amount of the loans. Over the time, the minimum amount is increased.
+In the Prosper Prospectus, we find a table that shows the maximum loan amount for each Prosper Rating. We compare this table with data of database that we are using in the analysis.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Function to create box-plot
+box.plot <- function(data.frame, var.x, var.y, label.x, label.y, title) { 
+  # Create a frequency histogram
+  #  
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var.x: selected variable for x axis
+  #   var.y: selected variable for y axis
+  #   label.x: x axis label 
+  #   label.y: y axis label
+  #   title: plot title
+  #
+  # Returns:
+  #   box-plot
+  ggplot(data.frame, aes(x = var.x, y = var.y )) +
+  geom_boxplot(fill = "#b10026") +
+  labs(x = label.x, y = label.y) +
+  ggtitle(title) 
+}
+
+box.plot(df, df$ProsperRating..Alpha., df$LoanOriginalAmount, 'Prosper Rating', "Loan Original Amount ($)", 'Box-plot Prosper Rating by Original Amount' )
+```
+
+The box-plot shows, as we expected, that the amount of the loan with the worst rating classes is less than the best rating classes. Based on the information in the Prospectus, over the time, the amount for the worst classes is reduced.
+Prosper offers fixed rate, fully amortizing.
+
+```{r}
+summary(df$BorrowerRate)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$BorrowerRate, 'Borrower Rate', 0.01, "Frequency histogram of Borrower Rate")
+```
+
+The information in the Prosper prospectus are confirmed. The range borrower Rate is between 0.03 and 0.36. Also for Borrower Rate, in the Prosper Prospectus, we find the table shows the minimum and maximum rate for each Prosper Rating. We compare this table with data of database that we are using in the analysis.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+box.plot(df, df$ProsperRating..Alpha., df$BorrowerRate, 'Prosper Rating', 'Borrower Rate', 'Box-plot Prosper Rating by Borrower Rate' )
+```
+
+
+The box-plot displays the full range of variation of Borrower Rate for each Prosper Rating, the figure don't confirm ranges given in the Prospectus, given that over time have been updated. 
+The Borrower Rate depends on Prosper Rating. It is determined principal based on two scores: a custom Prosper Score,'ProsperScore', and a credit score obtained from a credit reporting agency, 'CreditScoreRangeLower','CreditScoreRangeUpper'.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Encode 'ProsperScore' variable as a factor
+df$ProsperScore <- as.factor(df$ProsperScore)
+
+bar.plot(df, df$ProsperScore, 'Prosper Score', 'Loan by Prosper Score')
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Create new variable 'FICO' as middle point of Credit Score range
+df$FICO <- round((df$CreditScoreRangeLower + df$CreditScoreRangeUpper)/2, digits = 0)
+
+# Encode 'FICO' variable as a factor
+df$FICO <- as.factor(df$FICO)
+
+bar.plot(df, df$FICO, 'FICO', 'Loan by FICO')
+```
+
+In the above graphs, we show Rating tiers for Prosper Score and FICO. The Prosper Score predicts the probability of a Borrower Loan going "bad". In the Prosper Prospectus, "bad" is defined as going more than 60 days past due within twelve months of the application date.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Convert 'LoanStatus' variable in an object of type 'character'
+df$LoanStatus <- as.character(df$LoanStatus)
+
+# Change value of 'LoanStatus' variable based on definition of 'Bad' and 'Good'
+# Loan
+df$LoanStatus[df$LoanStatus == "FinalPaymentInProgress"] <- "Completed"
+
+df$LoanStatus[df$LoanStatus %in% c("Past Due (1-15 days)", "Past Due (16-30 days)", 
+  "Past Due (31-60 days)")] <- "Past Due (<60 days)"
+
+df$LoanStatus[df$LoanStatus %in% c("Past Due (61-90 days)", "Past Due (91-120 days)", 
+  "Past Due (>120 days)")] <- "Past Due (>60 days)"
+
+# Encode 'LoanStatus' variable as a factor
+df$LoanStatus <- as.factor(df$LoanStatus)
+
+bar.plot(df, df$LoanStatus, 'Loan Status', 'Loan by Status')
+```
+
+In the figures above, we show the Credit Lending Model of Prosper able to discriminate "Bad" loan. Many loans are not in default. The defaults and in situation of near default are physiological in the lending
+activities.
+We investigate some variable in the dataset that it can impact on the probability of default. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+selected.vars <- c("CurrentCreditLines", "OpenCreditLines", "TotalCreditLinespast7years", 
+    "OpenRevolvingAccounts", "OpenRevolvingMonthlyPayment", "RevolvingCreditBalance", 
+    "BankcardUtilization", "AvailableBankcardCredit", "InquiriesLast6Months", "TotalInquiries", 
+    "CurrentDelinquencies", "AmountDelinquent", "DelinquenciesLast7Years", "PublicRecordsLast10Years", 
+    "PublicRecordsLast12Months", "TotalTrades", "TradesNeverDelinquent..percentage.", 
+    "TradesOpenedLast6Months", "DebtToIncomeRatio")
+```
+
+A line of credit is an arrangement between a financial institution and a customer that establishes a maximum loan balance that the lender permits the borrower to access or maintain. The borrower can access funds from the line of credit at any time, as long as he does not exceed the maximum amount set in the agreement and as long as he meets any other requirements set by the financial institution.  
+The 'CurrentCreditLines' variable, the number of open or closed accounts in the borrower's name that the borrower is paying on time.
+
+```{r}
+summary(df$CurrentCreditLines)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$CurrentCreditLines, 'Current Credit Lines', 1, "Frequency histogram of Current Credit Lines") 
+```
+
+The 'OpenCreditLines' variable, the total number of open accounts.
+
+```{r}
+summary(df$OpenCreditLines)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$OpenCreditLines, 'Open Credit Lines', 1, "Frequency histogram of Open Credit Lines")
+```
+
+
+The 'TotalCreditLinespast7years' variable, the total number of credit lines appearing on the borrower's credit report in the past 7 years.
+
+```{r}
+summary(df$TotalCreditLinespast7years)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$TotalCreditLinespast7years, 'Total Credit Lines past 7 years', 1,"Frequency Histogram of Total Credit Lines past 7 years")
+```
+
+Revolving Account is a type of credit account in which the customer may defer payment on part of the balance. Interest is charged on the unpaid balance and added to the total owed. 
+
+```{r}
+summary(df$OpenRevolvingAccounts)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$OpenRevolvingAccounts, 'Open Revolving Accounts', 1, "Frequency Histogram of Open Revolving Accounts")
+```
+
+The 'OpenRevolvingMonthlyPayment' variable, it's the minimum requires we pay each month to keep your account in good standing.
+
+```{r}
+summary(df$OpenRevolvingMonthlyPayment)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$OpenRevolvingMonthlyPayment, 'Open Revolving Monthly Payment ($)', 100, "Frequency Histogram of Open Revolving Monthly Payment")
+```
+
+The 'InquiriesLast6Months' variable and 'TotalInquiries' variable, the number of times a bank or other business has requested the borrower's credit profile from a consumer credit rating agency, respectively last 6 Months and borrower's credit history.
+
+```{r}
+summary(df$InquiriesLast6Months)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$InquiriesLast6Months, "Inquiries Last 6 Months", 1, "Frequency Histogram of Inquiries Last 6 Months")
+```
+
+
+```{r}
+summary(df$TotalInquiries)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$TotalInquiries, "Total Inquiries", 1, "Total Inquiries")
+```
+
+The 'CurrentDelinquencies' variable and 'DelinquenciesLast7Years', the number of times the borrower has been more than 90 days late with a payment, respectively actually and last 7 Years. 
+
+```{r}
+summary(df$CurrentDelinquencies)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$CurrentDelinquencies, "Current Delinquencies", 1, "Frequency Histogram of Current Delinquencies")
+```
+
+```{r}
+summary(df$DelinquenciesLast7Years)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$DelinquenciesLast7Years, "Delinquencies Last 7Years", 1, "Frequency Histogram of Delinquencies Last 7 Years")
+```
+
+The "AmountDelinquent" variable, indicates the past due amounts owed by the borrower. 
+
+```{r}
+summary(df$AmountDelinquent)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$AmountDelinquent, "Amount Delinquent ($)", 5000, "Frequency Histogram of Amount Delinquent")
+
+```
+
+
+
+
+The 'PublicRecordsLast10Years' variable and 'PublicRecordsLast12Months' variable, the number of public records on the borrower's credit report, respectively last 10 years and lasr 12 Months. 
+
+```{r}
+summary(df$PublicRecordsLast10Years)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$PublicRecordsLast10Years, "Public Records Last 10 Years", 1, "Frequency Histogram of Public Records Last 10 Years")
+```
+
+```{r}
+summary(df$PublicRecordsLast12Months)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$PublicRecordsLast12Months, "Public Records Last 12 Months", 1, "Frequency Histogram of Public Records Last 12 Months")
+```
+
+The 'RevolvingCreditBalance' variable, the total outstanding balance that the borrower owes on open credit cards or other revolving credit accounts.
+
+```{r}
+summary(df$RevolvingCreditBalance)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$RevolvingCreditBalance, 'Revolving Credit Balance ($)', 5000,  "Frequency Histogram of Revolving Credit Balance") 
+```
+
+The 'BankcardUtilization' variable, the sum of the balances owed on open bankcards divided by the sum of the cards' credit limits.
+
+```{r}
+summary(df$BankcardUtilization)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$BankcardUtilization, 'Bankcard Utilization (%)', 0.05, "Frequency Histogram of Bankcard Utilization")
+```
+
+The 'AvailableBankcardCredit' variable, the total available credit via bank card.
+
+```{r}
+summary(df$AvailableBankcardCredit)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$AvailableBankcardCredit, "Available Bankcard Credit ($)", 5000, "Frequency Histogram of Available Bankcard Credit")
+```
+
+Trade Line is credit account records that are provided to credit reporting organization.
+
+```{r}
+summary(df$TotalTrades)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$TotalTrades, "Total Trades", 1, "Frequency Histogram of TotalTrades")
+```
+
+One of the most important features of the trade line is the payment status. The payment status will indicate that the payments are being made according to the terms of the credit agreement.
+
+```{r}
+summary(df$TradesNeverDelinquent..percentage.)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$TradesNeverDelinquent..percentage., "Trades Never Delinquent %", 0.05, "Frequency Histogram of TradesNeverDelinquent..percentage.")
+```
+
+```{r}
+summary(df$TradesOpenedLast6Months)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$TradesOpenedLast6Months, "Trades Opened Last 6 Months", 1, "Frequency Histogram of TradesOpenedLast6Months")
+```
+
+The 'DebtToIncomeRatio' variable, the sum of the borrower's monthly debt payments divided by the borrower's monthly income.
+
+```{r}
+summary(df$DebtToIncomeRatio)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+freq.hist(df, df$DebtToIncomeRatio, "Debt To Income Ratio", 0.05, "Frequency Histogram of Debt To Income Ratio")  
+```
+
+Given that in the dataset does not contain declined Loan. The plots give indications,if we can get a loan based on variable concern the credit history and indebtedness, although it would need to consider their combination to understand it.
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+Prosper provides information about loan. The "Loan Data from Prosper" data set contains 113,937 loans with 81 variables on each loan. The Prosper Marketplace offers fixed rate, fully amortizing, unsecured consumer loans. 
+On the basis of a series of considerations and evalutation, the data set of the analysis contains 16,189 loans: 
+It is considered the period after SEC registration is considerd. More precisely, all loans that have ProsperRating..numeric.,ProsperRating..Alpha.,ProsperScore,CreditScoreRangeLower,CreditScoreRangeUpper. Furthermore, the borrower has no prior loans. The debtors with more loans create distortion of the data for the fact that create duplicate values for the same variable.
+Given that, we want investigate the characteristics of loans that go into default, we do not consider loans whose " LoanStatus" is current. Then, in Prosper Marketplace,currently, loan terms of three and five years are available. Therefore, loan terms of one years are excluded. 
+Loans with missing values are not considered. This choice because after initial screening, few loans had missing values and only for the 'DebtToIncomeRatio' variable.
+
+### What is/are the main feature(s) of interest in your dataset?
+
+In the dataset, there are of variables that express synthetic judgment of credit risk of a prospective debtor,that is the ability to repay debt. This variables have an important function in a marketplace lending,  reduce asymmetric information between borrowers and lenders.In the online lending market, trust is an important issue. And, Identifying riskiness of the borrower, thi variables allow investors to be aware of the risk that they are taking. This variable are: CreditGrade,ProsperRating..numeric., ProsperRating..Alpha.,ProsperScore,CreditScoreRangeLower,CreditScoreRangeUpper. Folowing SEC Registration Prosper created a model that determined "Prosper Ratings". On the site of Prosper, it's available Prospectus, the offering document included in the registration statement filed with the SEC. It allows of understand rating system of Prosper and a lot of information. The Prosper Rating, 'ProsperRating..Alpha.' variable , is a letter that indicates the expected level of risk associated with the loan. Each letter grade corresponds to an estimated average annualized loss rate range.  
+We have custom Prosper Score, 'ProsperScore', and a credit score obtained from a credit reporting agency, 'CreditScoreRangeLower','CreditScoreRangeUpper'.
+The 'Prosper Score' predicts the probability of default, that is the probability of a Borrower Loan going "bad," through custom risk model that using historical data as well as a data archive from a consumer credit bureau. The probability of bad ranges correspond Prosper Scores.
+
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+
+The 'Prosper Score' is important to determinate "Prosper Ratings". In the dataset, there are variables to determine the probability of default.In particular, we consider the following variables:
+CurrentCreditLines,OpenCreditLines,TotalCreditLinespast7years,OpenRevolvingAccounts,
+OpenRevolvingMonthlyPayment,RevolvingCreditBalance,BankcardUtilization,AvailableBankcardCredit,
+InquiriesLast6Months,TotalInquiries,CurrentDelinquencies,AmountDelinquent,DelinquenciesLast7Years,
+PublicRecordsLast10Years,PublicRecordsLast12Months,TotalTrades,TradesNeverDelinquent..percentage.,
+TradesOpenedLast6Months and DebtToIncomeRatio.
+
+### Did you create any new variables from existing variables in the dataset?
+
+In the dataset, we have Lower Range and Upper Range for credit score obtained from a credit reporting agency. New variable FICO corresponds middle point of Credit Score range. 
+
+### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+
+The values of 'LoanStatus' variable is one of the following: 'Completed', 'Final Payment in Progress', 'Charge-Off', 'Defaulted', 'Past Due (1-15 days)', 'Past Due (16-30 days)', 'Past Due (31-60 days)',
+'Past Due (61-90 days)', 'Past Due (91-120 days)', 'Past Due (>120 days)'. New values are: 'Completed',
+'Chargedoff', 'Past Due (<60 days)', 'Past Due (>60 days)', 'Defaulted'.  
+We consider the loans in 'Final Payment in Progress' status as 'Completed' status given that loans that is in the process of being completed. Most loans that are in this status move to the Completed status within the next period. Given the definition of "bad" loan,in the Prosper Prospectus,is the probability of going 60+ days past due within the first twelve months from the date of loan origination, we consider two status 'Past Due (<60 days)' status , 'Past Due (>60 days)' for past due status. Understand if the status of a loan it is closer to "defaulted" status, it is important when we will create a binary variable: default or not.
+
+# Bivariate Plots Section
+
+For every variable, we determine number of default and observations for particular percentile and then derive the corresponding empirical default frequency, edf. 
+We create new Variable a binary variable,Badloan, which can take only two possible values: 0, if status is "Completed" or "'Past Due (<60 days)', and 1, if status is 'Past Due (>60 days)', 'Charge-Off', 'Defaulted'.
+
+```{r echo=FALSE, Bivariate_Plots}
+# Create a binary variable 'Badloan' that assume value 1 if loan goes to default
+# otherwise 0
+df$Badloan <- as.factor(ifelse(df$LoanStatus == "Defaulted" | df$LoanStatus == "Chargedoff" | 
+  df$LoanStatus == "Past Due (>60 days)", 1, 0))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Function to create data.frame object that contains empirical default frequency of defined variable
+df.edf <- function(data.frame,col1,x) {
+  # Derive empirical default frequency
+  #
+  # Args:
+  #   data.frame: data frame that contains value of selected variable
+  #   col1: selected variable
+  #   x: numeric vector of probabilities with values in [0,1]
+  #
+  # Returns
+  #  data.frame object
+  myvars <- c(col1,'Badloan')
+  newdata <- data.frame[myvars]
+  # Using mutate from dplyr inside a function: getting around non-standard evaluation
+  bin = lazyeval::interp(~ cut(a,unique(quantile(a,probs=x)),include.lowest=TRUE), a = as.name(col1))
+  new_col_name <- 'bin'
+  dataset <- newdata %>% mutate_(.dots = setNames(list(bin), new_col_name))
+  dataset <- dataset %>% mutate (bin2 = cume_dist(bin)) %>% group_by(bin,bin2) %>% summarise(Bad = sum(Badloan == 1 ),Good = sum(Badloan == 0), value = n()) %>% mutate( defaultprob = Bad / (Good+Bad) )
+  return(dataset)
+} 
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Function to create scatter plot 
+plot.edf <- function (data.frame, label.x, label.y, title) {
+  # Create a scatter plot
+  #  
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var.x: selected variable for x axis
+  #   var.y: selected variable for y axis
+  #   label.x: x axis label 
+  #   label.y: y axis label
+  #   title: plot title
+  #
+  # Returns:
+  #   scatter plot     
+  ggplot(aes(x = bin2, y = defaultprob), data = data.frame) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = TRUE, fill = "#ffffb2", colour = "#b10026") +
+  labs(x = label.x, y = label.y) +
+  ggtitle(title)
+}       
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.CurrentCreditLines <- df.edf(df,'CurrentCreditLines',seq(0,1,0.05))
+plot.edf(data.CurrentCreditLines, "Quantile of Current Credit Lines","Empirical default frequency", "Empirical default frequency of Current Credit Lines")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.OpenCreditLines <- df.edf(df,'OpenCreditLines',seq(0,1,0.05))
+plot.edf(data.OpenCreditLines, "Quantile of Open Credit Lines","Empirical default frequency", "Empirical default frequency of Open Credit Lines")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.TotalCreditLinespast7years <- df.edf(df,'TotalCreditLinespast7years',seq(0,1,0.05))
+plot.edf(data.TotalCreditLinespast7years, "Quantile of Total Credit Lines past 7 years","Empirical default frequency", "Empirical default frequency of Total Credit Lines past 7 years")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.OpenRevolvingAccounts <- df.edf(df,'OpenRevolvingAccounts',seq(0,1,0.05))
+plot.edf(data.OpenRevolvingAccounts, "Quantile of Open Revolving Accounts","Empirical default frequency", "Empirical default frequency of Open Revolving Accounts")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.OpenRevolvingMonthlyPayment<- df.edf(df,'OpenRevolvingMonthlyPayment',seq(0,1,0.05))
+plot.edf(data.OpenRevolvingMonthlyPayment, "Quantile of Open Revolving Monthly Payment","Empirical default frequency", "Empirical default frequency of Open Revolving Monthly Payment")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.InquiriesLast6Months<- df.edf(df,'InquiriesLast6Months',seq(0,1,0.05))
+plot.edf(data.InquiriesLast6Months, "Quantile of Inquiries Last 6 Months","Empirical default frequency", "Empirical default frequency of Inquiries Last 6 Months")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.TotalInquiries <- df.edf(df,'TotalInquiries',seq(0,1,0.05))
+plot.edf(data.TotalInquiries, "Quantile of Total Inquiries", "Empirical default frequency", "Empirical default frequency of Total Inquiries")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.CurrentDelinquencies<- df.edf(df,'CurrentDelinquencies',seq(0,1,0.05))
+plot.edf(data.CurrentDelinquencies, "Quantile of Current Delinquencies", "Empirical default frequency", "Empirical default frequency of Current Delinquencies")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.AmountDelinquent <- df.edf(df,'AmountDelinquent',seq(0,1,0.05))
+plot.edf(data.AmountDelinquent, "Quantile of Amount Delinquent", "Empirical default frequency", "Empirical default frequency of Amount Delinquent")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.DelinquenciesLast7Years<- df.edf(df,'DelinquenciesLast7Years',seq(0,1,0.05))
+plot.edf(data.DelinquenciesLast7Years,"Quantile of Delinquencies Last 7 Years", "Empirical default frequency", "Empirical default frequency of Delinquencies Last 7 Years")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.PublicRecordsLast10Years<- df.edf(df,'PublicRecordsLast10Years',seq(0,1,0.01))
+plot.edf(data.PublicRecordsLast10Years, "Quantile of Public Records Last 10 Years", "Empirical default frequency", "Empirical default frequency of Public Records Last 10 Years")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.PublicRecordsLast12Months <- df.edf(df,'PublicRecordsLast12Months',seq(0,1,0.01))
+plot.edf(data.PublicRecordsLast12Months, "Quantile of Public Records Last 12 Month", "Empirical default frequency", "Empirical default frequency of Public Records Last 12 Month")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.RevolvingCreditBalance <- df.edf(df,'RevolvingCreditBalance',seq(0,1,0.05))
+plot.edf(data.RevolvingCreditBalance, "Quantile of Revolving Credit Balance", "Empirical default frequency", "Empirical default frequency of Revolving Credit Balance")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.BankcardUtilization <- df.edf(df,'BankcardUtilization',seq(0,1,0.05))
+plot.edf(data.BankcardUtilization, "Quantile of Bankcard Utilization", "Empirical default frequency", "Empirical default frequency of Bankcard Utilization")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.AvailableBankcardCredit<- df.edf(df,'AvailableBankcardCredit',seq(0,1,0.05))
+plot.edf(data.AvailableBankcardCredit, "Quantile of Available Bankcard Credit", "Empirical default frequency", "Empirical default frequency of Available Bankcard Credit")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.TotalTrades<- df.edf(df,'TotalTrades',seq(0,1,0.05))
+plot.edf(data.TotalTrades, "Quantile of Total Trades", "Empirical default frequency", "Empirical default frequency of Total Trades")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.TradesNeverDelinquent..percentage.<- df.edf(df,'TradesNeverDelinquent..percentage.',seq(0,1,0.05))
+plot.edf(data.TradesNeverDelinquent..percentage., "Quantile of Trades Never Delinquent percentage", "Empirical default frequency", "Empirical default frequency of Trades Never Delinquent percentage")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.TradesOpenedLast6Months <- df.edf(df,'TradesOpenedLast6Months',seq(0,1,0.05))
+plot.edf(data.TradesNeverDelinquent..percentage., "Quantile of Trades Opened Last 6 Months", "Empirical default frequency", "Empirical default frequency of Trades Opened Last 6 Months")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.DebtToIncomeRatio <- df.edf(df,"DebtToIncomeRatio",seq(0,1,0.05))
+plot.edf(data.DebtToIncomeRatio,"Quantile of Debt To Income Ratio", "Empirical default frequency", "Empirical default frequency of Debt To Income Ratio")
+```
+
+The plots above give indications, how varied the empirical default frequency on variable concern the credit history and indebtedness, we highlighting linear relation. Although it would need to consider their combination to understand it. How the variable consider interact between them. The attention is for the variable with relation strongest, investigate multicollinearity phenomenon.
+
+```{r fig.width=15, fig.height=10, echo=FALSE, message=FALSE, warning=FALSE}
+# Create correlation matrix 
+matrix.corr <- as.matrix(round( cor( df[, c(selected.vars)], use = "na.or.complete", method = "pearson"),3))
+# Find the variables with correlation coefficients whose magnitude, absolute values, are between 0.5 and 1.  
+matrix.corr.melt <- arrange(melt(matrix.corr), value) 
+matrix.corr.melt <- subset(matrix.corr.melt, (value >=  0.500 | value <=  -0.500) & value != 1.000)  
+df.unique.vars <- df[c(unique(c(as.character(matrix.corr.melt [,1]),as.character(matrix.corr.melt [,2]))))]
+# Create scatter plot of matrices
+set.seed(4000)
+pairs.panels(df.unique.vars[sample.int(nrow(df.unique.vars),1000),]) 
+```
+
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+In the investigation, we tried to understand how some variables, take singular, have on default rates.The variables of concern the borrower's credit history and borrower indebtedness that provided from Credit Bureau and Prosper makes public. For every variable, we determine number of default and observations for particular percentile and then derive the corresponding empirical default frequency. 
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+How the variables of concern the borrower's credit history and borrower indebtedness are they are related to one another. 
+
+### What was the strongest relationship you found?
+
+We observe strongest relationship between "CurrentCreditLines" and "OpenCreditLines", "TotalTrades" and "TotalCreditLinespast7years", "OpenRevolvingAccounts" and "OpenCreditLines", "OpenRevolvingAccounts" and "CurrentCreditLines", "RevolvingCreditBalance" and "OpenRevolvingMonthlyPayment", "TotalTrades" and "CurrentCreditLines", "CurrentCreditLines" and "TotalCreditLinespast7years", "OpenRevolvingMonthlyPayment" and "OpenRevolvingAccounts", "TotalTrades" and "OpenCreditLines", "OpenRevolvingMonthlyPayment" and "OpenCreditLines", "TotalInquiries" and "InquiriesLast6Months",
+"TotalCreditLinespast7years" and "OpenCreditLines", "OpenRevolvingMonthlyPayment" and "CurrentCreditLines", "OpenRevolvingAccounts" and "TotalCreditLinespast7years".
+
+
+# Multivariate Plots Section
+
+The range of Prosper Scores and Credit Scores are divided into multiple segments and combining them into a single grid and we procede to estimate base loss rate. We can make adjustments to the base loss rate to determine the final loss rate. The final loss rate determines the Proper Rating.  
+Initially, we combine Prosper Scores and credit scores.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
+# Function to create data.frame object that contains empirical default frequency of combination of credit rating variable
+df.combine <- function (data.frame, var.1,var.2) {
+  # Derive empirical default frequency
+  #
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var.1: first selected variable
+  #   var.2: second selected variable
+  #
+  # Returns
+  #  data.frame object
+  myvars <- c(var.1,var.2,'Badloan')
+  newdata <- data.frame[myvars]
+  dataset <- newdata %>% group_by_(var.1,var.2) %>% summarise(Bad = sum(Badloan == 1 ),Good = sum(Badloan == 0), value = n()) %>% mutate( defaultprob = Bad / (Good+Bad)) 
+  return(dataset)
+}
+
+# Function to create tile plot
+tile <- function(data.frame, var.x, var.y,label.x, label.y, var.fill, label.fill, title.plot) {
+  # Create a tile plot
+  #  
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var.x: x axis selected variable
+  #   var.y: y axis selected variable
+  #   label.x: x axis label 
+  #   label.y: y axis label
+  #   var.fill: fill selected variable
+  #   label.fill: title legend
+  #   title.plot: title plot 
+  #
+  # Returns:
+  #   tile plot
+  ggplot(data.frame, aes(x = var.x , y = var.y)) +
+    geom_tile(aes(fill=var.fill)) +
+    scale_fill_gradient(low = "#67a9cf", high = "#b10026",na.value = "grey50") +  
+    labs(x = label.x, y = label.y, fill = label.fill, title = title.plot) +
+    theme(panel.background = element_rect(fill = "white", colour = "white"))
+}
+
+# Function to create raster plot
+raster <- function(data.frame, var.x, var.y,label.x, label.y, var.fill, label.fill, title.plot) {
+          # Create a raster plot
+          #  
+          # Args:
+          #   data.frame: data frame that contains value of the selected variable
+          #   var.x:  x axis selected variable
+          #   var.y: y axis selected variable 
+          #   label.x: x axis label   
+          #   label.y: y axis label
+          #   var.fill: fill selected variable
+          #   label.fill: title legend
+          #   title.plot: title plot
+          #
+          # Returns:
+          #   raster plot
+          ggplot(data.frame, aes(x = var.x , y = var.y)) +
+          geom_raster(aes(fill=var.fill),interpolate = TRUE) +
+          scale_fill_gradient(low = "#67a9cf", high = "#b10026",na.value = "grey50") +  
+          labs(x = label.x, y = label.y, fill = label.fill, title = title.plot ) +
+          theme(panel.background = element_rect(fill = "white", colour = "white"))
+}
+
+
+df.ProsperScoreFICO <- df.combine(df, 'ProsperScore', 'FICO')
+tile(df.ProsperScoreFICO, df.ProsperScoreFICO$ProsperScore, df.ProsperScoreFICO$FICO, "Prosper Score",
+       "FICO", df.ProsperScoreFICO$value, 'Number of loans', 'Number of loans for combination Prosper Score and FICO')
+```
+
+In the plot above, we observe numer of loans for each combine.
+ 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+tile(df.ProsperScoreFICO, df.ProsperScoreFICO$ProsperScore, df.ProsperScoreFICO$FICO,"Prosper Score",
+       "FICO", df.ProsperScoreFICO$defaultprob, 'edf', 'Empirical Default Probability for combination Prosper Score and FICO')
+```
+
+In this plot, we undestand the emprical default frenquency, edf, for each combine.
+Now, we have 120 combinations of "ProsperScore" and "FICO", for each is assigned a value between 1 (the worst) and 120 (the best). 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Create score variable and fill variable in data.frame object
+df.ProsperScoreFICO$score <- c(seq(1,120,1))
+df <- df.ProsperScoreFICO %>%  select(ProsperScore, FICO, score) %>% inner_join(df, df.ProsperScoreFICO, by = c("ProsperScore", "FICO"))
+```
+
+Therefore, we have new variable, "score" that combine with Prosper Rating.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+df.scorerating <- df.combine(df, 'score', 'ProsperRating..Alpha.')
+raster(df.scorerating, df.scorerating$score, df.scorerating$ProsperRating..Alpha., 'Score', 'Prosper Rating', df.scorerating$value, 'Number of loans', 'Number of loans for combination Score and Prosper Rating')
+```
+
+In the plot above, numer of loans for each combine.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+raster(df.scorerating, df.scorerating$score, df.scorerating$ProsperRating..Alpha., 'Score', 'Prosper Rating', df.scorerating$defaultprob, 'edf', 'Empirical Default Probability for combination Score and Prosper Rating')
+```
+
+In this plot, we undestand the emprical default frenquency for each combine. 
+Now, we estimate an explicit probability of default based on the variable that we consider. We are interested in modeling not continuous response variable but binary, Badloan, as function of one or more predictor variables. An generalized linear model, Logistic Regression, to accommodate responses that follow non-normal distributions. 
+We perform operation of standardizing data of variables that we consider to understand if loan is "Good or "Bad". This operation scaling variables in a similar range, we adopt "z-score standardization" procedure.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Create data.frame object to estimate logistic regression
+df.logistic <- as.data.frame(lapply(df[selected.vars], function(x) (x - mean(x))/sd(x)))
+# Fill Badloan variable in the df.logistic data.frame
+df.logistic$BadLoan <- df$Badloan
+# Create object to fit generalized linear models, logistic regression
+glm.fit <- glm(BadLoan ~ CurrentCreditLines + OpenCreditLines + TotalCreditLinespast7years + 
+    OpenRevolvingAccounts + OpenRevolvingMonthlyPayment + RevolvingCreditBalance + 
+    BankcardUtilization + AvailableBankcardCredit + InquiriesLast6Months + TotalInquiries + 
+    CurrentDelinquencies + AmountDelinquent + DelinquenciesLast7Years + PublicRecordsLast10Years + 
+    PublicRecordsLast12Months + TotalTrades + TradesNeverDelinquent..percentage. + 
+    TradesOpenedLast6Months + DebtToIncomeRatio, data = df.logistic, family = binomial)
+# Select best logistic model by AIC.
+best.glm.fit <- step(glm.fit, direction = c("both", "backward", "forward"),trace=0)
+# Create object to fit best logistic regression
+glm.fit <- glm(formula(best.glm.fit), data = df.logistic, family = binomial)
+# Predicted values for best logistic regression
+glm.probs <- predict (glm.fit ,type ="response")
+# Create object to extracts model coefficients
+coefficients <- coef(glm.fit)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Create vector object with variables utilize in the best logistic regression
+var.best.logistic <- c("CurrentCreditLines", "TotalCreditLinespast7years", 
+    "OpenRevolvingAccounts", "OpenRevolvingMonthlyPayment",
+    "BankcardUtilization", "AvailableBankcardCredit", "InquiriesLast6Months", "TotalInquiries", 
+    "CurrentDelinquencies", "DelinquenciesLast7Years",  
+    "PublicRecordsLast12Months", "TotalTrades", "TradesNeverDelinquent..percentage.", 
+    "TradesOpenedLast6Months", "DebtToIncomeRatio")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# For each loans assign the estimate of probability default  
+df$glm.probs <- glm.probs
+```
+
+For each combination of combine Prosper Scores and credit scores associate mean estimate probability.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Function to create data.frame object that contains default probability mean of combination of credit rating variable
+df.combineprobs <- function (data.frame, var.1,var.2) {
+  # Derive 
+  #
+  # Args:
+  #   data.frame: data frame that contains value of the selected variable
+  #   var.1: first selected variable
+  #   var.2: second selected variable
+  #
+  # Returns
+  #  data.frame object
+  myvars <- c(var.1,var.2,'glm.probs')
+  newdata <- data.frame[myvars]
+  dataset <- newdata %>% group_by_(var.1,var.2) %>% summarise(glm.probs.mean = mean(glm.probs)) 
+  return(dataset)
+}
+
+df.probsProsperScoreFico <- df.combineprobs(df, 'ProsperScore', 'FICO')
+tile(df.probsProsperScoreFico, df.probsProsperScoreFico$ProsperScore, df.probsProsperScoreFico$FICO, 'Prosper Score', 'FICO', df.probsProsperScoreFico$glm.probs.mean, 'probs', 'Default Probability for combination Prosper Score and FICO')
+```
+
+In the plot, we observe mean estimate probability for each combination. Now, we combine "score" variable and "ProsperRating..Alpha.".
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+df.probsScoreRating <- df.combineprobs(df, "score", "ProsperRating..Alpha.")
+raster(df.probsScoreRating, df.probsScoreRating$score, df.probsScoreRating$ProsperRating..Alpha., 
+  "Score", "Prosper Rating", df.probsScoreRating$glm.probs.mean, 'probs', 'Default Probability for combination score and Prosper Rating')
+```
+
+In the plot, we observe mean estimate probability for each combination.
+
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+In this part, we investigate how the empirical default frequency change and estimate default probability between credit rating tiers.
+
+### Were there any interesting or surprising interactions between features?
+In the combination of rating credit, we investigated number of loans for each combination. We have loans with worst Prosper Score and best FICO at the same time. When we investigated empirical default probability and estimate default probability, loans with best credit rating tend to have small default probability and loans worst credit rating tend to have high default probability, as we expected. When we combine the loans by credit rating, the results are influenced the number loans each combination has.
+	
+### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+We build a model for estimate an explicit probability of default based on the variable that we consider. In particular, the logit model, we use an linear regression model and adjusted through an exponential transformation, called the logistic transformation. The strengths that  the range of values generated by the logistic functionis limited to the interval (0,1). This guarantees that the dependent variable y is always between 0 and 100%, and can therefore be correctly interpreted as a probability of default. 
+Logistic regression attempts to predict outcomes based on a set of independent variables, it is necessary identified all the relevant independent variables,include the wrong independent variables, the model will have little to no predictive value. It is necessary consider multicollinearity exists, limit conclusions of study. Furthemore, Logit models are vulnerable to overfitting. It's occurs when a model is excessively complex, such as having too many parameters relative to the number of observations. A model that has been overfit has poor predictive performance
+
+
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r fig.width=15, fig.height=10, echo=FALSE, message=FALSE, warning=FALSE, Plot_One}
+# Function to save legend, see
+# http://www.sthda.com/english/wiki/ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page-r-software-and-data-visualization
+get_legend <- function(myggplot) {
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+# Function to create density plot
+density.plot <- function(data.frame, var.x) {
+  # Create density plot for selected variable setting fill equal binary variable, Badloan
+  # 
+  # Args:
+  #     data.frame = data frame that contains value of the selected variable   
+  #     var.x = selected variable
+  #
+  # Return:
+  #     density plot
+  ggplot(data = data.frame, aes_string(x = var.x, colour = "Badloan", fill = "Badloan")) + 
+    geom_density() + scale_fill_manual(values = c("#67a9cf", "#b10026")) + scale_color_manual(values = c("#67a9cf", 
+    "#b10026")) 
+}
+
+density.plot.1 <- density.plot(df, "CurrentCreditLines") + theme(legend.position = "none")
+
+density.plot.2 <- density.plot(df, "TotalCreditLinespast7years") + theme(legend.position = "none")
+
+density.plot.3 <- density.plot(df, "OpenRevolvingAccounts") + theme(legend.position = "none")
+
+density.plot.4 <- density.plot(df, "OpenRevolvingMonthlyPayment") + theme(legend.position = "none")
+
+density.plot.5 <- density.plot(df, "BankcardUtilization") + theme(legend.position = "none")
+
+density.plot.6 <- density.plot(df, "AvailableBankcardCredit") + theme(legend.position = "none")
+
+density.plot.7 <- density.plot(df, "InquiriesLast6Months") + theme(legend.position = "none")
+
+density.plot.8 <- density.plot(df, "TotalInquiries") + theme(legend.position = "none")
+
+density.plot.9 <- density.plot(df, "CurrentDelinquencies") + theme(legend.position = "none")
+
+density.plot.10 <- density.plot(df, "DelinquenciesLast7Years") + theme(legend.position = "none")
+
+density.plot.11 <- density.plot(df, "PublicRecordsLast12Months") + theme(legend.position = "none")
+
+density.plot.12 <- density.plot(df, "TotalTrades") + theme(legend.position = "none")
+
+density.plot.13 <- density.plot(df, "TradesNeverDelinquent..percentage.") + theme(legend.position = "none")
+
+density.plot.14 <- density.plot(df, "TradesOpenedLast6Months") + theme(legend.position = "none")
+
+density.plot.15 <- density.plot(df, "DebtToIncomeRatio") + theme(legend.direction = "horizontal", 
+  legend.position = "bottom", legend.box = "vertical", legend.title = element_text('Bad loan'),legend.background = element_rect(fill = "gray90", 
+    size = 0.1, linetype = "dotted")) + guides(colour = FALSE)
+
+
+# Save the legend
+legend <- get_legend(density.plot.15)
+
+# Remove the legend from the plot
+density.plot.15 <- density.plot.15 + theme(legend.position = "none")
+
+# Create layout
+layout.plot.1 <- rbind(t(replicate(30, rep(1:3, each = 4))), t(replicate(30, rep(4:6, 
+  each = 4))), t(replicate(30, rep(7:9, each = 4))), t(replicate(30, rep(10:12, 
+  each = 4))), t(replicate(30, rep(13:15, each = 4))), t(replicate(25, rep(16, 
+  each = 12))))
+
+# Arrange the plots
+grid.arrange(density.plot.1, density.plot.2, density.plot.3, density.plot.4, density.plot.5, 
+  density.plot.6, density.plot.7, density.plot.8, density.plot.9, density.plot.10, 
+  density.plot.11, density.plot.12, density.plot.13, density.plot.14, density.plot.15, 
+  legend, layout_matrix = layout.plot.1)
+```
+
+
+### Description One
+
+For each variable Of best logistic model, we compare the distribution for "Bad" loans, 1, and, "Good" loans, 0. We observe plot, we derive that "Bad" loans and "Good" loans have different density plot and then we can conclude the features of loan have impact if it goes to default or not. However, the different attributes of loan must be considered together.
+
+### Plot Two
+
+
+```{r fig.width=15, fig.height=10, echo=FALSE, message=FALSE, warning=FALSE, Plot_Two}
+# see http://docs.ggplot2.org/current/geom_smooth.html
+df$Badloan <- as.numeric(df$Badloan) - 1
+
+# Function to create point and smooth plot, logistic curve
+logistic.point.plot <- function(data.frame, var.x) {
+  # Create point and smooth plot, logistic curve 
+  #     Args:
+  #     data.frame = data frame that contains value of the selected variable   
+  #     var.x = selected variable
+  #
+  # Return:
+  #     point and smooth plot
+  ggplot(data.frame, aes_string(x = var.x, y = "Badloan", colour = "ProsperRating..Alpha.")) + 
+    geom_jitter(height = 0.05) + geom_smooth(method = "glm", method.args = list(family = "binomial"), 
+    se = TRUE, colour = "#bd0026", fill = "#ffffb2", size = 1.5, alpha = 0.3) + 
+    scale_colour_manual(values = c("#ffffb2", "#fed976", "#feb24c", "#fd8d3c", 
+      "#fc4e2a", "#e31a1c", "#b10026")) + labs( y = 'Probability')
+}
+
+logistic.point.plot.1 <- logistic.point.plot(df, "CurrentCreditLines") + theme(legend.position = "none")
+
+logistic.point.plot.2 <- logistic.point.plot(df, "TotalCreditLinespast7years") + 
+  theme(legend.position = "none")
+
+logistic.point.plot.3 <- logistic.point.plot(df, "OpenRevolvingAccounts") + theme(legend.position = "none")
+
+logistic.point.plot.4 <- logistic.point.plot(df, "OpenRevolvingMonthlyPayment") + 
+  theme(legend.position = "none")
+
+logistic.point.plot.5 <- logistic.point.plot(df, "BankcardUtilization") + theme(legend.position = "none")
+
+logistic.point.plot.6 <- logistic.point.plot(df, "AvailableBankcardCredit") + theme(legend.position = "none")
+
+logistic.point.plot.7 <- logistic.point.plot(df, "InquiriesLast6Months") + theme(legend.position = "none")
+
+logistic.point.plot.8 <- logistic.point.plot(df, "TotalInquiries") + theme(legend.position = "none")
+
+logistic.point.plot.9 <- logistic.point.plot(df, "CurrentDelinquencies") + theme(legend.position = "none")
+
+logistic.point.plot.10 <- logistic.point.plot(df, "DelinquenciesLast7Years") + theme(legend.position = "none")
+
+logistic.point.plot.11 <- logistic.point.plot(df, "PublicRecordsLast12Months") + 
+  theme(legend.position = "none")
+
+logistic.point.plot.12 <- logistic.point.plot(df, "TotalTrades") + theme(legend.position = "none")
+
+logistic.point.plot.13 <- logistic.point.plot(df, "TradesNeverDelinquent..percentage.") + 
+  theme(legend.position = "none")
+
+logistic.point.plot.14 <- logistic.point.plot(df, "TradesOpenedLast6Months") + theme(legend.position = "none")
+
+logistic.point.plot.15 <- logistic.point.plot(df, "DebtToIncomeRatio") + theme(legend.direction = "horizontal", 
+  legend.position = "bottom", legend.box = "vertical", legend.background = element_rect(fill = "gray90", 
+    size = 0.1, linetype = "dotted")) 
+
+
+legend <- get_legend(logistic.point.plot.15)
+
+logistic.point.plot.15 <- logistic.point.plot.15 + theme(legend.position = "none")
+
+grid.arrange(logistic.point.plot.1, logistic.point.plot.2, logistic.point.plot.3, 
+  logistic.point.plot.4, logistic.point.plot.5, logistic.point.plot.6, logistic.point.plot.7, 
+  logistic.point.plot.8, logistic.point.plot.9, logistic.point.plot.10, logistic.point.plot.11, 
+  logistic.point.plot.12, logistic.point.plot.13, logistic.point.plot.14, logistic.point.plot.15, 
+  legend, layout_matrix = layout.plot.1)
+```
+
+
+### Description Two
+
+In the plot, for each variable for best logistic model we observe the logistic curve, how change the probability default to variable considered. Each variable have different impact on default of loans. 
+Increasing the default probability, the class rating of loans tends to worsen. Furthermore, in the plot we can observe the class of rating for "bad"" loans, 1, and "Good"" loans, 0. The "Bad" loans tend to have worst class and "Good" loans  to have best class, as we expected.    
+
+### Plot Three
+```{r fig.width=20, fig.height=10, echo=FALSE, message=FALSE, warning=FALSE, Plot_Three}
+# Create Frequency histogram for predict value of default probability
+plot.glm.probs.1 <- ggplot(data = df, aes(x = glm.probs, fill = ProsperRating..Alpha.)) + 
+  geom_histogram(binwidth = 0.01) + scale_fill_manual(values = c("#ffffb2", "#fed976", 
+  "#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026")) + theme(legend.direction = "horizontal", 
+  legend.position = "bottom", legend.box = "vertical", legend.background = element_rect(fill = "gray90", 
+    size = 0.1, linetype = "dotted"))
+# Limit x axis Frequency histogram, we focus on right tail
+plot.glm.probs.2 <- plot.glm.probs.1 + xlim(0.5, 1) + theme(legend.position = "none")
+
+legend <- get_legend(plot.glm.probs.1)
+
+plot.glm.probs.1 <- plot.glm.probs.1 + theme(legend.position = "none")
+
+
+layout.plot.2 <- rbind(t(replicate(4, rep(1:2, each = 4))), t(rep(3, each = 8)))
+grid.arrange(plot.glm.probs.1, plot.glm.probs.2, legend, layout_matrix = layout.plot.2)
+```
+
+### Description Three
+In the plot, we observe that the number of loans with low default probability are more than loans with hign default probability, this respect the economicity of credit activity. Furthemore, the loans with worst credit rating have highest default probability, as we expected.
+
+------
+
+# Reflection
+In this analysis,initially, we have to understand Prosper Market and to find confirm on disbursed loans based on Prosper Prospectus. Then, we investigate the proprietary rating system Prosper. In particular, this system requires the estimate, first of all, of default probability and then  expected loss. To do this, it is necessary various information. Prosper provides a series data of loans issued. Mainly,the investigation focused on the default rates. Specifically, understand some variables affect this rate. The goal is not derive a value of probability exact and precise. But rather, provided a series of information and elements to elaborate and develop reflection for structured models of credit scoring. 
+
+
+
